@@ -52,8 +52,9 @@
 UART_HandleTypeDef huart4;
 DMA_HandleTypeDef hdma_uart4_tx;
 DMA_HandleTypeDef hdma_uart4_rx;
-
 ADC_HandleTypeDef hadc1;
+
+
 
 TIM_HandleTypeDef htim4;
 
@@ -73,12 +74,14 @@ static void MX_ADC1_Init(void);
 static void MX_TIM4_Init(void);
 
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
+uint32_t ADC_read_adc_val_poll(ADC_HandleTypeDef* hadc);
+void ADC_start_adc_conversion_IT(ADC_HandleTypeDef* hadc);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 
 /* USER CODE END PFP */
-
+uint32_t adc_result = 0;
 /* USER CODE BEGIN 0 */
 
 /* USER CODE END 0 */
@@ -131,6 +134,13 @@ int main(void)
 
 
   /* USER CODE BEGIN 3 */
+//	  adc_result = ADC_read_adc_val_poll(&hadc1);
+	  ADC_start_adc_conversion_IT(&hadc1);
+	  uart_debug_send_string("ADC Val: ");
+	  uart_debug_print_uint32(adc_result);
+	  uart_debug_newline();
+
+	  HAL_Delay(1000);
 
   }
   /* USER CODE END 3 */
@@ -266,7 +276,7 @@ static void MX_ADC1_Init(void)
 
     /**Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
     */
-  sConfig.Channel = ADC_CHANNEL_0;
+  sConfig.Channel = ADC_CHANNEL_3;
   sConfig.Rank = ADC_REGULAR_RANK_1;
   sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
@@ -274,8 +284,48 @@ static void MX_ADC1_Init(void)
     _Error_Handler(__FILE__, __LINE__);
   }
 
+  //Tim added
+  HAL_NVIC_SetPriority(ADC_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(ADC_IRQn);
+
 }
 
+uint32_t ADC_read_adc_val_poll(ADC_HandleTypeDef* hadc) {
+
+    ADC_ChannelConfTypeDef sConfig;
+
+    sConfig.Channel = ADC_CHANNEL_3;
+    sConfig.Rank = 1;
+    sConfig.SamplingTime = ADC_SAMPLETIME_480CYCLES;
+    sConfig.Offset = 0;
+    HAL_ADC_ConfigChannel(hadc, &sConfig);
+
+    HAL_ADC_Start(hadc);
+    HAL_ADC_PollForConversion(hadc, 1000);
+    uint32_t result = HAL_ADC_GetValue(hadc);
+    //UartDebug_printuint32(result);
+
+    HAL_ADC_Stop(hadc);
+
+
+    return result;
+
+}
+
+void ADC_start_adc_conversion_IT(ADC_HandleTypeDef* hadc) {
+
+    ADC_ChannelConfTypeDef sConfig;
+
+    sConfig.Channel = ADC_CHANNEL_3;
+    sConfig.Rank = 1;
+    sConfig.SamplingTime = ADC_SAMPLETIME_480CYCLES;
+    sConfig.Offset = 0;
+    HAL_ADC_ConfigChannel(hadc, &sConfig);
+
+    HAL_ADC_Start_IT(hadc);
+
+
+}
 /** Pinout Configuration
 */
 static void MX_GPIO_Init(void)
@@ -343,6 +393,17 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
 {
 	if(huart == &huart4) {
 		uart_debug_callback();
+	}
+}
+
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
+{
+	if(hadc ==&hadc1)
+	{
+		adc_result = HAL_ADC_GetValue(hadc);
+
+
+		HAL_ADC_Stop_IT(hadc);
 	}
 }
 

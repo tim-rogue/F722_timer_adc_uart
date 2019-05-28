@@ -43,6 +43,7 @@
 extern DMA_HandleTypeDef hdma_uart4_tx;
 extern DMA_HandleTypeDef hdma_uart4_rx;
 extern UART_HandleTypeDef huart4;
+extern ADC_HandleTypeDef hadc1;
 
 /******************************************************************************/
 /*            Cortex-M7 Processor Interruption and Exception Handlers         */ 
@@ -224,6 +225,12 @@ void DMA1_Stream4_IRQHandler(void)
   /* USER CODE BEGIN DMA1_Stream4_IRQn 1 */
 
   /* USER CODE END DMA1_Stream4_IRQn 1 */
+}
+
+void ADC_IRQHandler(void)
+{
+	HAL_ADC_IRQHandler(&hadc1);
+
 }
 
 /* USER CODE BEGIN 1 */
