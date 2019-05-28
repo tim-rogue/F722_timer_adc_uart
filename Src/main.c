@@ -98,7 +98,7 @@ int main(void)
   MX_TIM4_Init();
   MX_UART4_Init();
 
-
+  // initialize the uart debug module with the uart handle
   uart_debug_init(&huart4);
   uart_debug_send_line("UART ALIVE Butts butts!!\n");
 
@@ -267,14 +267,16 @@ static void MX_ADC1_Init(void)
 
 uint32_t ADC_read_adc_val_poll(ADC_HandleTypeDef* hadc) {
 
+	// added this channel config code just to see if it'll let me change things on the fly
+	// not necessary
     ADC_ChannelConfTypeDef sConfig;
-
     sConfig.Channel = ADC_CHANNEL_3;
     sConfig.Rank = 1;
     sConfig.SamplingTime = ADC_SAMPLETIME_480CYCLES;
     sConfig.Offset = 0;
     HAL_ADC_ConfigChannel(hadc, &sConfig);
 
+    //this is the code that actually gets the adc values
     HAL_ADC_Start(hadc);
     HAL_ADC_PollForConversion(hadc, 1000);
     uint32_t result = HAL_ADC_GetValue(hadc);
@@ -289,14 +291,18 @@ uint32_t ADC_read_adc_val_poll(ADC_HandleTypeDef* hadc) {
 
 void ADC_start_adc_conversion_IT(ADC_HandleTypeDef* hadc) {
 
+	// added this channel config code just to see if it'll let me change things on the fly
+	// not necessary to function
     ADC_ChannelConfTypeDef sConfig;
-
     sConfig.Channel = ADC_CHANNEL_3;
     sConfig.Rank = 1;
     sConfig.SamplingTime = ADC_SAMPLETIME_480CYCLES;
     sConfig.Offset = 0;
     HAL_ADC_ConfigChannel(hadc, &sConfig);
 
+    // this line starts the adc conversion.
+    // retrieval of the value and the stopping of the ADC
+    // happens in HAL_ADC_ConvCpltCallback() func
     HAL_ADC_Start_IT(hadc);
 
 
@@ -375,9 +381,10 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
 	if(hadc ==&hadc1)
 	{
+		// saving this value to the global adc_result variable
+		// only for test purposes
 		adc_result = HAL_ADC_GetValue(hadc);
-
-
+        // stops the ADC because we are not operating in continuous conversion mode
 		HAL_ADC_Stop_IT(hadc);
 	}
 }
