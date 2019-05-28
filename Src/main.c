@@ -43,11 +43,8 @@
 #include <string.h>
 #include "uart_debug.h"
 
-/* USER CODE BEGIN Includes */
-#define DEBUG_UART_TRANSMIT_BUFFER_LEN 64
-/* USER CODE END Includes */
 
-/* Private variables ---------------------------------------------------------*/
+#define DEBUG_UART_TRANSMIT_BUFFER_LEN 64
 
 UART_HandleTypeDef huart4;
 DMA_HandleTypeDef hdma_uart4_tx;
@@ -60,12 +57,7 @@ TIM_HandleTypeDef htim4;
 
 
 uint8_t uart_debug_buffer[DEBUG_UART_TRANSMIT_BUFFER_LEN];
-/* USER CODE BEGIN PV */
-/* Private variables ---------------------------------------------------------*/
 
-/* USER CODE END PV */
-
-/* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
@@ -77,14 +69,9 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 uint32_t ADC_read_adc_val_poll(ADC_HandleTypeDef* hadc);
 void ADC_start_adc_conversion_IT(ADC_HandleTypeDef* hadc);
 
-/* USER CODE BEGIN PFP */
-/* Private function prototypes -----------------------------------------------*/
 
-/* USER CODE END PFP */
 uint32_t adc_result = 0;
-/* USER CODE BEGIN 0 */
 
-/* USER CODE END 0 */
 
 /**
   * @brief  The application entry point.
@@ -93,25 +80,16 @@ uint32_t adc_result = 0;
   */
 int main(void)
 {
-  /* USER CODE BEGIN 1 */
 
-  /* USER CODE END 1 */
-
-  /* MCU Configuration----------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
 
-  /* USER CODE BEGIN Init */
 
-  /* USER CODE END Init */
 
   /* Configure the system clock */
   SystemClock_Config();
 
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
@@ -121,9 +99,6 @@ int main(void)
   MX_UART4_Init();
 
 
-  /* USER CODE BEGIN 2 */
-
-  /* USER CODE END 2 */
   uart_debug_init(&huart4);
   uart_debug_send_line("UART ALIVE Butts butts!!\n");
 
@@ -133,7 +108,7 @@ int main(void)
 
 
 
-  /* USER CODE BEGIN 3 */
+
 //	  adc_result = ADC_read_adc_val_poll(&hadc1);
 	  ADC_start_adc_conversion_IT(&hadc1);
 	  uart_debug_send_string("ADC Val: ");
@@ -143,7 +118,7 @@ int main(void)
 	  HAL_Delay(1000);
 
   }
-  /* USER CODE END 3 */
+
 
 }
 
@@ -303,7 +278,7 @@ uint32_t ADC_read_adc_val_poll(ADC_HandleTypeDef* hadc) {
     HAL_ADC_Start(hadc);
     HAL_ADC_PollForConversion(hadc, 1000);
     uint32_t result = HAL_ADC_GetValue(hadc);
-    //UartDebug_printuint32(result);
+
 
     HAL_ADC_Stop(hadc);
 
@@ -407,9 +382,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 	}
 }
 
-/* USER CODE BEGIN 4 */
 
-/* USER CODE END 4 */
 
 /**
   * @brief  This function is executed in case of error occurrence.
@@ -444,12 +417,5 @@ void assert_failed(uint8_t* file, uint32_t line)
 }
 #endif /* USE_FULL_ASSERT */
 
-/**
-  * @}
-  */
-
-/**
-  * @}
-  */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
