@@ -50,13 +50,10 @@ UART_HandleTypeDef huart4;
 DMA_HandleTypeDef hdma_uart4_tx;
 DMA_HandleTypeDef hdma_uart4_rx;
 ADC_HandleTypeDef hadc1;
-
-
-
 TIM_HandleTypeDef htim4;
 
 
-uint8_t uart_debug_buffer[DEBUG_UART_TRANSMIT_BUFFER_LEN];
+
 
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
@@ -68,6 +65,7 @@ static void MX_TIM4_Init(void);
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 uint32_t ADC_read_adc_val_poll(ADC_HandleTypeDef* hadc);
 void ADC_start_adc_conversion_IT(ADC_HandleTypeDef* hadc);
+void print_timer_count(TIM_HandleTypeDef* htim);
 
 
 uint32_t adc_result = 0;
@@ -102,20 +100,22 @@ int main(void)
   uart_debug_init(&huart4);
   uart_debug_send_line("UART ALIVE Butts butts!!\n");
 
+  //starts the PWM on Tim4 channel 1 (pin PD12)
+  HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
   while (1)
   {
 
 
 
-
+	  print_timer_count(&htim4);
 
 //	  adc_result = ADC_read_adc_val_poll(&hadc1);
-	  ADC_start_adc_conversion_IT(&hadc1);
-	  uart_debug_send_string("ADC Val: ");
-	  uart_debug_print_uint32(adc_result);
-	  uart_debug_newline();
-
-	  HAL_Delay(1000);
+//	  ADC_start_adc_conversion_IT(&hadc1);
+//	  uart_debug_send_string("ADC Val: ");
+//	  uart_debug_print_uint32(adc_result);
+//	  uart_debug_newline();
+//
+//	  HAL_Delay(1000);
 
   }
 
@@ -307,6 +307,15 @@ void ADC_start_adc_conversion_IT(ADC_HandleTypeDef* hadc) {
 
 
 }
+
+void print_timer_count(TIM_HandleTypeDef* htim)
+{
+    uint32_t timer_count = htim->Instance->CNT;
+    uart_debug_send_string("Timer count: ");
+    uart_debug_print_uint32(timer_count);
+    uart_debug_newline();
+
+}
 /** Pinout Configuration
 */
 static void MX_GPIO_Init(void)
@@ -329,7 +338,7 @@ static void MX_TIM4_Init(void)
   TIM_OC_InitTypeDef sConfigOC;
 
   htim4.Instance = TIM4;
-  htim4.Init.Prescaler = 16;
+  htim4.Init.Prescaler = 512;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim4.Init.Period = 4095;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
