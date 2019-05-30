@@ -44,7 +44,7 @@
 #include "uart_debug.h"
 
 
-#define DEBUG_UART_TRANSMIT_BUFFER_LEN 64
+#define CIRCULAR_BUFFER_LEN 11
 
 UART_HandleTypeDef huart4;
 DMA_HandleTypeDef hdma_uart4_tx;
@@ -53,7 +53,11 @@ ADC_HandleTypeDef hadc1;
 TIM_HandleTypeDef htim4;
 
 
-
+uint8_t circular_buffer[CIRCULAR_BUFFER_LEN] = {0};
+uint8_t* circ_buff_head = circular_buffer;
+// this variable will point to the next free address in the buffer
+// i.e if the buffer has data written into its first 4 addresses, tail will point to the 5th
+uint8_t* circ_buff_tail = circular_buffer;
 
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
@@ -67,6 +71,7 @@ uint32_t ADC_read_adc_val_poll(ADC_HandleTypeDef* hadc);
 void ADC_start_adc_conversion_IT(ADC_HandleTypeDef* hadc);
 void print_timer_count(TIM_HandleTypeDef* htim);
 void set_timer_duty_cycle(TIM_HandleTypeDef* htim, uint32_t pulse, uint32_t channel);
+void add_to_circ_buff(uint8_t* circ_buff, uint8_t* data, uint32_t len);
 
 
 uint32_t adc_result = 0;
@@ -102,9 +107,34 @@ int main(void)
   uart_debug_send_line("UART ALIVE Butts butts!!\n");
 
   //starts the PWM on Tim4 channel 1 (pin PD12)
-  HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
-  uint32_t pulse = 2000;
-  set_timer_duty_cycle(&htim4, pulse, TIM_CHANNEL_1);
+//  HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
+//  uint32_t pulse = 2000;
+//  set_timer_duty_cycle(&htim4, pulse, TIM_CHANNEL_1);
+
+  uint8_t data1[10] = {0x01,0x01,0x01,0x01,0x01,
+		               0x01,0x01,0x01,0x01,0x01};
+
+  uint8_t data2[10] = {0x0A,0x0A,0x0A,0x0A,0x0A,
+  		               0x0A,0x0A,0x0A,0x0A,0x0A};
+
+  uint8_t data3[10] = {0x05,0x05,0x05,0x05,0x05,
+  		               0x05,0x05,0x05,0x05,0x05};
+
+  uint8_t data4[10] = {0x0C,0x0C,0x0C,0x0C,0x0C,
+		  	  	  	  0x0C,0x0C,0x0C,0x0C,0x0C};
+
+  add_to_circ_buff(circular_buffer, data1, sizeof(data1));
+  uart_debug_mem_dump(circular_buffer,CIRCULAR_BUFFER_LEN);
+
+  add_to_circ_buff(circular_buffer, data2, sizeof(data2));
+  uart_debug_mem_dump(circular_buffer,CIRCULAR_BUFFER_LEN);
+
+  add_to_circ_buff(circular_buffer, data3, sizeof(data3));
+  uart_debug_mem_dump(circular_buffer,CIRCULAR_BUFFER_LEN);
+
+  add_to_circ_buff(circular_buffer, data4, sizeof(data3));
+  uart_debug_mem_dump(circular_buffer,CIRCULAR_BUFFER_LEN);
+
   while (1)
   {
 
@@ -127,13 +157,13 @@ int main(void)
 	  print_timer_count(&htim4);
 	  */
 
-	  adc_result = ADC_read_adc_val_poll(&hadc1);
-	  ADC_start_adc_conversion_IT(&hadc1);
-	  uart_debug_send_string("ADC Val: ");
-	  uart_debug_print_uint32(adc_result);
-	  uart_debug_newline();
-
-      HAL_Delay(200);
+	  //adc_result = ADC_read_adc_val_poll(&hadc1);
+//	  ADC_start_adc_conversion_IT(&hadc1);
+//	  uart_debug_send_string("ADC Val: ");
+//	  uart_debug_print_uint32(adc_result);
+//	  uart_debug_newline();
+//
+//      HAL_Delay(200);
 
   }
 
@@ -332,6 +362,46 @@ void print_timer_count(TIM_HandleTypeDef* htim)
     uart_debug_send_string("Timer count: ");
     uart_debug_print_uint32(timer_count);
     uart_debug_newline();
+
+}
+
+void add_to_circ_buff(uint8_t* circ_buff, uint8_t* data, uint32_t len)
+{
+	// check to see if the incoming data will cause a wrap around in the buffer
+	// if it doesn't:
+	// 		copy the data to just after the tail
+	//		assign the tail to its new position
+	// if it does:
+	//		copy the data that will fit before a wrap around
+	// 		copy the remaining data to the beginning of the buffer
+	//      assign the tail to its new position
+
+	// get the index of the tail by the difference between the circ buffer tail address
+	// minus the circ buffer heaf addres
+	uint32_t tail_index = circ_buff_tail - circ_buff_head;
+	// get the data space that remains in the buffer before we need to wrap around.
+
+	uint32_t room_left = (uint32_t) CIRCULAR_BUFFER_LEN - tail_index ;
+
+	// if the incoming data will need to wrap around the circ buffer
+	if(len > room_left )
+	{
+
+		// copy the data that will fit into circ_buff before we need to wrap
+		memcpy(circ_buff + tail_index, data, room_left);
+		// copy the remaining data to the beginning of the buffer
+		memcpy(circ_buff, data + room_left, len - room_left);
+		// set the tail address to the next free mem location in the buffer
+		circ_buff_tail = circ_buff_head + (len - room_left);
+	}else // our incoming data will fit
+	{
+		//copy all the data into the circ buffer
+		memcpy(circ_buff_tail, data, len);
+		//set the tail to its new position
+		circ_buff_tail = circ_buff_tail + len;
+
+	}
+
 
 }
 
